@@ -21,33 +21,34 @@ std::vector<size_t> gen_rand_idx(size_t n_cachelines){
 
 int main(){
     size_t constexpr CACHELINE_SIZE = std::hardware_destructive_interference_size;
-    size_t constexpr BUF_SZ = (1U << 31U);
+    size_t constexpr BUF_SZ = (1U << 24U);
+    size_t constexpr N_CACHELINES = BUF_SZ / CACHELINE_SIZE;
+    size_t constexpr N_ITERS = 5U;
+    
     
     std::vector<std::pair<size_t,long long>> measurements; // {cache_sz, access time (ns)}
-    uint8_t* buffer = reinterpret_cast<uint8_t*>(new uint8_t[BUF_SZ]);
+    
+    for(size_t i=0U; i<N_ITERS; ++i){
+        uint8_t* buffer = reinterpret_cast<uint8_t*>(new uint8_t[BUF_SZ]);
 
-    for(size_t curr_sz=64U; curr_sz<=BUF_SZ; curr_sz <<= 1U){
-        size_t n_cachelines = curr_sz / CACHELINE_SIZE;
+        // group in batches for more accurate results
+        size_t batch_sz = 200U;
+        size_t n_batches = N_CACHELINES / batch_sz;
+        auto rand_indexes = gen_rand_idx(batch_sz);
         
         // warm cache to get desired memory layout
         // memory layout should be like this with lower mem address on left:
         // RAM ... | L3 ... | L2 ... | L1 ...
-        for(size_t i=0; i<curr_sz; i += CACHELINE_SIZE){
-            buffer[i] ^= 0x0101;
+        for(size_t i=0; i<BUF_SZ; i+=CACHELINE_SIZE) {
             volatile uint8_t v = buffer[i];
             (void)v;
         }
 
-        // group in batches for more accurate results
-        size_t batch_sz = 1000U;
-        size_t n_batches = n_cachelines / batch_sz;
-        
         // start from right (L1)
-        size_t buf_idx = curr_sz-1;
+        size_t buf_idx = BUF_SZ-1;
         
         // time memory accesses
         for(size_t batch=0; batch < n_batches; ++batch){
-            auto rand_indexes = gen_rand_idx(batch_sz);
 
             auto start = std::chrono::high_resolution_clock::now();
             for(size_t i=0; i < batch_sz; ++i){
@@ -56,14 +57,15 @@ int main(){
                 (void)v;
             }
             auto end = std::chrono::high_resolution_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+            auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / batch_sz;
 
             buf_idx -= (batch_sz * CACHELINE_SIZE);
-            measurements.push_back({buf_idx * CACHELINE_SIZE, elapsed});
+            measurements.push_back({buf_idx, elapsed});
         }
+
+        delete[] buffer;
     }
     
-    delete[] buffer;
 
     // dump results to log file
     for(auto& [sz, time] : measurements){

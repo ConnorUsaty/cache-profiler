@@ -28,7 +28,7 @@ struct alignas(CACHELINE_SIZE) CacheLine {
     char padding[CACHELINE_SIZE - sizeof(CacheLine*)]; // this makes the struct exactly one cache line
 };
 
-// TODO: fix so that I can use the arrtibute
+// TODO: fix so that I can use the attribute
 // the line below is causing my intellisense to break for some reason so commented out for now
 // __attribute__((always_inline)) 
 inline void prevent_compiler_optimization(CacheLine* ptr) {
@@ -117,7 +117,7 @@ std::vector<CacheTestResult> run_cache_tests() {
     std::vector<CacheTestResult> results;
     std::vector<size_t> test_sizes_kb = {
         4, 8, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768,
-        1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576, 32768
+        1024, 1536, 2048, 3072, 4096, 6144, 8192
     };
     
     const size_t ITERATIONS = 10000000;
@@ -186,7 +186,7 @@ std::string get_timestamp_string() {
 
 void generate_output_csv(const std::vector<CacheTestResult>& results, const std::string& dir_path) {
     std::string timestamp = get_timestamp_string();
-    std::string filename = dir_path + "/cache_measurements_" + timestamp + ".csv";
+    std::string filename = dir_path + "results_" + timestamp + ".csv";
 
     std::ofstream file(filename);
     if (!file.is_open()) {
@@ -210,7 +210,7 @@ int main() {
     std::cout << "========================================\n";
     
     try {
-        const std::string dir_path = "measurements";
+        const std::string dir_path = "../measurements/";
         ensure_directory_exists(dir_path);
         
         std::cout << "Running tests...\n\n";

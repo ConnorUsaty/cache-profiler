@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <random>
+#include <unordered_map>
 
 std::vector<size_t> gen_rand_idx(size_t n_cachelines){
     std::vector<size_t> idx{};
@@ -24,16 +25,15 @@ int main(){
     size_t constexpr BUF_SZ = (1U << 24U);
     size_t constexpr N_CACHELINES = BUF_SZ / CACHELINE_SIZE;
     size_t constexpr N_ITERS = 5U;
+
+    size_t batch_sz = 500U;
+    size_t n_batches = N_CACHELINES / batch_sz;
     
-    
-    std::vector<std::pair<size_t,long long>> measurements; // {cache_sz, access time (ns)}
+    std::unordered_map<size_t, long long> measurements; // {cache_sz, access time (ns)}
     
     for(size_t i=0U; i<N_ITERS; ++i){
         uint8_t* buffer = reinterpret_cast<uint8_t*>(new uint8_t[BUF_SZ]);
 
-        // group in batches for more accurate results
-        size_t batch_sz = 200U;
-        size_t n_batches = N_CACHELINES / batch_sz;
         auto rand_indexes = gen_rand_idx(batch_sz);
         
         // warm cache to get desired memory layout
@@ -57,18 +57,18 @@ int main(){
                 (void)v;
             }
             auto end = std::chrono::high_resolution_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / batch_sz;
+            auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
 
             buf_idx -= (batch_sz * CACHELINE_SIZE);
-            measurements.push_back({buf_idx, elapsed});
+            measurements[buf_idx] += elapsed;
         }
 
         delete[] buffer;
     }
-    
 
     // dump results to log file
     for(auto& [sz, time] : measurements){
+        time /= (N_ITERS * batch_sz);
         std::cout << "SIZE: " << sz << " ACCESS TIME: " << time << "\n";
     }
 

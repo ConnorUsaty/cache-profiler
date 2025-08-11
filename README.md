@@ -97,4 +97,3 @@ The latency graph typically shows distinct plateaus and jumps:
 - Add macOS support for core pinning
 - Replace `aligned_alloc` with cross-platform memory allocation
 - Add non-x86 architecture support for compiler optimization prevention
-- Use `std::hardware_destructive_interference_size` instead of hardcoded cache line size

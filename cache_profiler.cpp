@@ -15,6 +15,38 @@
 #define CACHELINE_SIZE 64
 
 
+// TODO: clearly this only works on linux, make another one that works on windows
+#ifdef __linux__
+#include <sched.h>
+#include <pthread.h>
+
+// ensuring this program continues to run on the same thread is very important
+// if we keep getting scheduled on different cores we lose all the state
+// we built up in the other cores cache, thus likely ruining all L1 and L2 cache measurements
+bool pin_to_core(int core_id) {
+    // set cpuset mask to only core_id
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(core_id, &cpuset);
+    
+    // pin this thread to only core_id
+    pthread_t thread = pthread_self();
+    int result = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
+    if (result != 0) {
+        std::cerr << "Failed to set CPU affinity: " << strerror(result) << "\n";
+        return false;
+    }
+    
+    // verify the affinity was set
+    CPU_ZERO(&cpuset);
+    if (pthread_getaffinity_np(thread, sizeof(cpu_set_t), &cpuset) == 0) {
+        std::cout << "Thread pinned to core " << core_id << "\n";
+        return true;
+    }
+    return false;
+}
+#endif
+
 struct CacheTestResult {
     size_t size_kb;
     double latency_ns;
@@ -213,6 +245,15 @@ int main() {
     try {
         const std::string dir_path = "../measurements/";
         ensure_directory_exists(dir_path);
+
+        // TODO: allow pinning on all systems
+        #ifdef __linux__
+            int target_core = 1;
+            if (!pin_to_core(target_core)) {
+                std::cerr << "Warning: Could not pin to core " << target_core 
+                        << ", measurements may be less consistent\n";
+            }
+        #endif
         
         std::cout << "Running tests...\n\n";
         auto results = run_cache_tests();

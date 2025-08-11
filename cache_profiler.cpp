@@ -20,9 +20,9 @@
 #include <sched.h>
 #include <pthread.h>
 
-// ensuring this program continues to run on the same thread is very important
+// ensuring this program continues to run on the same core is very important
 // if we keep getting scheduled on different cores we lose all the state
-// we built up in the other cores cache, thus likely ruining all L1 and L2 cache measurements
+// we built up in the previous cores cache, thus likely ruining all L1 and L2 cache measurements
 bool pin_to_core(int core_id) {
     // set cpuset mask to only core_id
     cpu_set_t cpuset;
@@ -93,7 +93,7 @@ CacheLine* create_pointer_chain(size_t size_bytes) {
     for (size_t i = 0; i < n_elements - 1; ++i) {
         buffer[indices[i]].next = &buffer[indices[i + 1]];
     }
-    buffer[indices[n_elements - 1]].next = &buffer[indices[0]]; // Make it circular
+    buffer[indices[n_elements - 1]].next = &buffer[indices[0]]; // make it circular
     
     return buffer;
 }

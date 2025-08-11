@@ -100,10 +100,10 @@ void flush_cache() {
     delete[] flush_buffer;
 }
 
-void warm_cache(CacheLine* start, size_t iterations) {
+void warm_cache(CacheLine* start, size_t n_cachelines) {
     // warm cache (cannot measure cache latency if our data is still in RAM)
     CacheLine* ptr = start;
-    for (size_t i = 0; i < 1000; ++i) {
+    for (size_t i = 0; i < n_cachelines; ++i) {
         ptr = ptr->next;
         prevent_compiler_optimization(ptr);
     }
@@ -131,6 +131,7 @@ std::vector<CacheTestResult> run_cache_tests() {
     
     for (size_t size_kb : test_sizes_kb) {
         size_t size_bytes = size_kb * 1024;
+        size_t n_cachelines = size_bytes / CACHELINE_SIZE;
         std::vector<double> latencies;
         
         for (size_t sample = 0; sample < SAMPLES; ++sample) {
@@ -139,7 +140,7 @@ std::vector<CacheTestResult> run_cache_tests() {
             // flush any data in caches from previous test
             flush_cache();
             // warm cache with the data for this test
-            warm_cache(chain, ITERATIONS);
+            warm_cache(chain, n_cachelines);
             
             double latency = measure_latency(chain, ITERATIONS);
             latencies.push_back(latency);

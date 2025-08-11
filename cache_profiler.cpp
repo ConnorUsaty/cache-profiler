@@ -11,9 +11,14 @@
 #include <memory>
 #include <filesystem>
 
-// TODO: use std::hardware_destructive_interference_size (i.e. do not assume cache line size)
-#define CACHELINE_SIZE 64
-
+// this seems to be best practice for getting the cache line size
+// however only supported C++17 onwards and with specific compilers
+#ifdef __cpp_lib_hardware_interference_size
+    constexpr size_t CACHELINE_SIZE = std::hardware_destructive_interference_size;
+#else
+// if unsupported we will just assume the common 64 byte size
+    constexpr size_t CACHELINE_SIZE = 64U;
+#endif
 
 // TODO: clearly this only works on linux, make another one that works on windows
 #ifdef __linux__

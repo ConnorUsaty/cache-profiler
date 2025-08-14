@@ -93,6 +93,7 @@ The latency graph typically shows distinct plateaus and jumps:
 - **Major spike**: L3 cache exceeded, accessing main memory
 
 ## TODOs
+- Look into using `isolcpu` to prevent re scheduling entirely
 - Implement Windows support for core pinning
 - Add macOS support for core pinning
 - Replace `aligned_alloc` with cross-platform memory allocation

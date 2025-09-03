@@ -9,7 +9,7 @@ cmake ..
 make
 
 # run cache profiler and gen .csv file
-./cache_profiler
+sudo nice -n -20 ./cache_profiler
 cd ..
 echo
 
